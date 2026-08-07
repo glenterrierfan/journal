@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Supabase Connection Test</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  body { margin: 0; padding: 24px; background: #E7E2D2; font-family: -apple-system, sans-serif; color: #232B24; }
+  h1 { font-size: 1.3rem; }
+  .line { padding: 10px 12px; border-radius: 6px; margin-bottom: 10px; font-size: 0.95rem; }
+  .pending { background: #EFEBDD; border: 1px solid #b9b199; }
+  .ok { background: #d9ecd9; border: 1px solid #3F5443; color: #1e2e1f; }
+  .fail { background: #f6dcd2; border: 1px solid #B5592E; color: #5a2410; }
+  code { font-size: 0.85em; word-break: break-all; }
+</style>
+</head>
+<body>
+  <h1>Supabase Connection Test</h1>
+  <div id="results">
+    <div class="line pending">Running tests…</div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://foddrbexzkbyrklzkphh.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_i_ELwj1uhxU_eYr2BO5FaA_hWPS5uu1";
+
+    const resultsEl = document.getElementById("results");
+
+    function addLine(status, text) {
+      const div = document.createElement("div");
+      div.className = "line " + status;
+      div.textContent = text;
+      resultsEl.appendChild(div);
+    }
+
+    async function runTests() {
+      resultsEl.innerHTML = "";
+
+      // Test 1: does the Supabase library itself load?
+      if (typeof window.supabase === "undefined") {
+        addLine("fail", "❌ Test 1 FAILED: The Supabase library didn't load at all. This usually means no internet connection, or the CDN script was blocked.");
+        return;
+      }
+      addLine("ok", "✅ Test 1 passed: Supabase library loaded.");
+
+      // Test 2: can we create a client with these keys?
+      let client;
+      try {
+        client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        addLine("ok", "✅ Test 2 passed: Client created with your URL and key.");
+      } catch (e) {
+        addLine("fail", "❌ Test 2 FAILED: Could not create client. Error: " + e.message);
+        return;
+      }
+
+      // Test 3: can we actually reach the project and query the table?
+      try {
+        const { data, error } = await client.from("planner_state").select("*").limit(1);
+        if (error) {
+          addLine("fail", "❌ Test 3 FAILED: Connected, but got an error querying the table. This usually means the table doesn't exist yet, or the SQL setup step was missed. Error: " + error.message);
+        } else {
+          addLine("ok", "✅ Test 3 passed: Successfully reached your Supabase project and queried the planner_state table. Rows returned: " + data.length);
+          addLine("ok", "🎉 Everything's working — your app should be able to connect fine.");
+        }
+      } catch (e) {
+        addLine("fail", "❌ Test 3 FAILED: Network error reaching Supabase. Error: " + e.message);
+      }
+    }
+
+    runTests();
+  </script>
+</body>
+</html>
